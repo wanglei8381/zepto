@@ -1,11 +1,13 @@
 //     Zepto.js
 //     (c) 2010-2016 Thomas Fuchs
 //     Zepto.js may be freely distributed under the MIT license.
+//     解读zepto
 
 var Zepto = (function() {
   var undefined, key, $, classList, emptyArray = [], concat = emptyArray.concat, filter = emptyArray.filter, slice = emptyArray.slice,
     document = window.document,
     elementDisplay = {}, classCache = {},
+    //一些可以不需要单位的css属性，其中line-height的数值表示当前字体的大小的倍数
     cssNumber = { 'column-count': 1, 'columns': 1, 'font-weight': 1, 'line-height': 1,'opacity': 1, 'z-index': 1, 'zoom': 1 },
     fragmentRE = /^\s*<(\w+|!)[^>]*>/,
     singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
@@ -62,22 +64,33 @@ var Zepto = (function() {
     return match
   }
 
+  //类似typeof，但typeof并不能准确表示其类型,主要有一下类型
+  //Undefined --> "undefined",Null --> "object", Boolean --> "boolean", Number --> "number", String --> "string"
+  //Symbol --> "symbom", Function --> "function",其它都是"object"
+  //type细化了具体常用的类型，具体如下
+  // null和undefined --> null 其它boolean number string function object array date regexp error
   function type(obj) {
     return obj == null ? String(obj) :
       class2type[toString.call(obj)] || "object"
   }
 
   function isFunction(value) { return type(value) == "function" }
+  //在浏览器中window会引用自身
   function isWindow(obj)     { return obj != null && obj == obj.window }
+  //在浏览器中通过判断元素的节点类型是否等于DOCUMENT_NODE来确定元素是否是document
   function isDocument(obj)   { return obj != null && obj.nodeType == obj.DOCUMENT_NODE }
   function isObject(obj)     { return type(obj) == "object" }
+  //是否是简单的对象，简单说就是obj = {}或new Object()类似这样的声明方式
   function isPlainObject(obj) {
     return isObject(obj) && !isWindow(obj) && Object.getPrototypeOf(obj) == Object.prototype
   }
+  //是否有length属性
   function likeArray(obj) { return typeof obj.length == 'number' }
 
+  //将数组中的null和undefined去掉,返回一个新数组
   function compact(array) { return filter.call(array, function(item){ return item != null }) }
   function flatten(array) { return array.length > 0 ? $.fn.concat.apply([], array) : array }
+  //将类似这样的"user-name" --> "userName"
   camelize = function(str){ return str.replace(/-+(.)?/g, function(match, chr){ return chr ? chr.toUpperCase() : '' }) }
   function dasherize(str) {
     return str.replace(/::/g, '/')
@@ -86,17 +99,21 @@ var Zepto = (function() {
            .replace(/_/g, '-')
            .toLowerCase()
   }
+  //去除数组的重复数据
   uniq = function(array){ return filter.call(array, function(item, idx){ return array.indexOf(item) == idx }) }
 
+  //获取class的正则表达式，不存在就缓存在classCache中，存在就直接获取
   function classRE(name) {
     return name in classCache ?
       classCache[name] : (classCache[name] = new RegExp('(^|\\s)' + name + '(\\s|$)'))
   }
 
+  //为一些元素添加PX单位
   function maybeAddPx(name, value) {
     return (typeof value == "number" && !cssNumber[dasherize(name)]) ? value + "px" : value
   }
 
+  //获取元素的默认展示方式,创建一个节点添加到body的后面获取其display,再将其删除
   function defaultDisplay(nodeName) {
     var element, display
     if (!elementDisplay[nodeName]) {
@@ -110,6 +127,7 @@ var Zepto = (function() {
     return elementDisplay[nodeName]
   }
 
+  //获取一个元素的直接孩子节点如果元素有children属性拷贝一份返回，否在依据节点类型查询
   function children(element) {
     return 'children' in element ?
       slice.call(element.children) :

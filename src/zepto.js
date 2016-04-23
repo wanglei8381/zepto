@@ -366,6 +366,10 @@ var Zepto = (function() {
   $.expr = { }
   $.noop = function() {}
 
+  // 对数组，字符串，普通对象进行遍历，
+  // 每次遍历调用回调函数（参数1：值,参数2：下标或key），
+  // 如果回调函数返回的值非null，则存储到数组中
+  // 返回一个新的数组
   $.map = function(elements, callback){
     var value, values = [], i, key
     if (likeArray(elements))
@@ -381,6 +385,9 @@ var Zepto = (function() {
     return flatten(values)
   }
 
+  // 对数组，字符串，普通对象进行遍历，
+  // 每次遍历调用回调函数（参数1：下标或key,参数2：值），
+  // 如果回调函数返回false，则停止遍历
   $.each = function(elements, callback){
     var i, key
     if (likeArray(elements)) {
@@ -394,6 +401,9 @@ var Zepto = (function() {
     return elements
   }
 
+  // 同数组的filter，
+  // 即每次遍历调用回调函数（回调参数element, index, array），
+  // 回调函数返回true，保存该元素，否则舍弃
   $.grep = function(elements, callback){
     return filter.call(elements, callback)
   }
@@ -401,6 +411,7 @@ var Zepto = (function() {
   if (window.JSON) $.parseJSON = JSON.parse
 
   // Populate the class2type map
+  // 对class2type复制，用于$.type函数的验证
   $.each("Boolean Number String Function Array Date RegExp Object Error".split(" "), function(i, name) {
     class2type[ "[object " + name + "]" ] = name.toLowerCase()
   })
@@ -445,6 +456,7 @@ var Zepto = (function() {
       return this
     },
     get: function(idx){
+      //获取$对象的dom元素，idx不存在取全部
       return idx === undefined ? slice.call(this) : this[idx >= 0 ? idx : idx + this.length]
     },
     toArray: function(){ return this.get() },
@@ -464,6 +476,7 @@ var Zepto = (function() {
       return this
     },
     filter: function(selector){
+      //过滤匹配的选择器
       if (isFunction(selector)) return this.not(this.not(selector))
       return $(filter.call(this, function(element){
         return zepto.matches(element, selector)
@@ -541,27 +554,34 @@ var Zepto = (function() {
       return filtered(ancestors, selector)
     },
     parent: function(selector){
+      //获取集合中每个元素的的父节点，去除重复的，去除筛选条件的
       return filtered(uniq(this.pluck('parentNode')), selector)
     },
     children: function(selector){
+      //获取集合中每个元素的孩子节点，去除筛选条件的
       return filtered(this.map(function(){ return children(this) }), selector)
     },
     contents: function() {
+      //获得取集合中每个匹配元素集合元素的子元素，包括文字和注释节点。
       return this.map(function() { return this.contentDocument || slice.call(this.childNodes) })
     },
     siblings: function(selector){
+      //获取对象集合中所有元素的兄弟节点，不包括自身
       return filtered(this.map(function(i, el){
         return filter.call(children(el.parentNode), function(child){ return child!==el })
       }), selector)
     },
     empty: function(){
+      //清空对象集合中每个元素的DOM内容。
       return this.each(function(){ this.innerHTML = '' })
     },
     // `pluck` is borrowed from Prototype.js
+    //获取集合中每个元素的某个属性
     pluck: function(property){
-      return $.map(this, function(el){ return el[property] })
+        return $.map(this, function(el){ return el[property] })
     },
     show: function(){
+      //设置集合中每个元素display属性为空或默认属性
       return this.each(function(){
         this.style.display == "none" && (this.style.display = '')
         if (getComputedStyle(this, '').getPropertyValue("display") == "none")
@@ -569,14 +589,18 @@ var Zepto = (function() {
       })
     },
     replaceWith: function(newContent){
+      //用给定的内容替换所有匹配的元素
       return this.before(newContent).remove()
     },
+    //<p>1</p><p>2</p>
+    //$('p').wrap('<div></div>') ---> <div><p>1</p></div> <div><p>2</p></div>
     wrap: function(structure){
       var func = isFunction(structure)
       if (this[0] && !func)
-        var dom   = $(structure).get(0),
-            clone = dom.parentNode || this.length > 1
-
+        var dom   = $(structure).get(0),//获取包裹的dom节点
+            clone = dom.parentNode || this.length > 1//如果dom存在parentNode属性说明它已经存在文档中
+                                                     //如果length>1说明有多个元素要被dom包裹
+                                                     //这两种情况都要进行dom克隆才能使用dom的副本
       return this.each(function(index){
         $(this).wrapAll(
           func ? structure.call(this, index) :
@@ -584,6 +608,8 @@ var Zepto = (function() {
         )
       })
     },
+    //<p>1</p><p>2</p>
+    //$('p').wrapAll('<div></div>') ---> <div><p>1</p> <p>2</p></div>
     wrapAll: function(structure){
       if (this[0]) {
         $(this[0]).before(structure = $(structure))
@@ -594,6 +620,8 @@ var Zepto = (function() {
       }
       return this
     },
+    //<p>1</p><p>2</p>
+    //$('p').wrapInner('<div></div>') ---> <p><div>1</div></p>  <p><div>2</div></p>
     wrapInner: function(structure){
       var func = isFunction(structure)
       return this.each(function(index){
@@ -602,26 +630,33 @@ var Zepto = (function() {
         contents.length ? contents.wrapAll(dom) : self.append(dom)
       })
     },
+    //移除集合中每个元素的直接父节点，并把他们的子元素保留在原来的位置
     unwrap: function(){
       this.parent().each(function(){
         $(this).replaceWith($(this).children())
       })
       return this
     },
+    //通过深度克隆来复制集合中的所有元素,就是把事件同时clone了
     clone: function(){
       return this.map(function(){ return this.cloneNode(true) })
     },
     hide: function(){
       return this.css("display", "none")
     },
+    //显示或隐藏匹配元素，如果 setting为true，相当于show 法。如果setting为false。相当于 hide方法。，默认hide
     toggle: function(setting){
       return this.each(function(){
         var el = $(this)
         ;(setting === undefined ? el.css("display") == "none" : setting) ? el.show() : el.hide()
       })
     },
+    //获取对象集合中每一个元素的前一个兄弟节点，通过选择器来进行过滤。
     prev: function(selector){ return $(this.pluck('previousElementSibling')).filter(selector || '*') },
+    //获取对象集合中每一个元素的后一个兄弟节点，通过选择器来进行过滤。
     next: function(selector){ return $(this.pluck('nextElementSibling')).filter(selector || '*') },
+    //取第一个元素的值
+    //赋集合中所有的值
     html: function(html){
       return 0 in arguments ?
         this.each(function(idx){
@@ -638,6 +673,9 @@ var Zepto = (function() {
         }) :
         (0 in this ? this.pluck('textContent').join("") : null)
     },
+    //只指定name，则获取集合中第一个元素的某个属性值
+    //指定name和value则设置给集合中的属性赋值
+    //对于HTML元素我们自己自定义的DOM属性，在处理时，使用attr方法。
     attr: function(name, value){
       var result
       return (typeof name == 'string' && !(1 in arguments)) ?
@@ -655,6 +693,7 @@ var Zepto = (function() {
         setAttribute(this, attribute)
       }, this)})
     },
+    //对于HTML元素本身就带有的固有属性，在处理时，使用prop方法。
     prop: function(name, value){
       name = propMap[name] || name
       return (1 in arguments) ?
@@ -672,6 +711,8 @@ var Zepto = (function() {
 
       return data !== null ? deserializeValue(data) : undefined
     },
+    //取第一个
+    //赋值所有
     val: function(value){
       return 0 in arguments ?
         this.each(function(idx){
@@ -682,6 +723,8 @@ var Zepto = (function() {
            this[0].value)
         )
     },
+    //getBoundingClientRect 方法返回的是调用该方法的元素的TextRectangle对象，
+    //该对象具有top、left、right、bottom四个属性，分别代表该元素上、左、右、下四条边界相对于浏览器窗口左上角（注意，不是文档区域的左上角）的偏移像素值。
     offset: function(coordinates){
       if (coordinates) return this.each(function(index){
         var $this = $(this),
@@ -822,6 +865,7 @@ var Zepto = (function() {
         left: offset.left - parentOffset.left
       }
     },
+    //找到第一个定位过的祖先元素，意味着它的css中的position 属性值为“relative”, “absolute” or “fixed”
     offsetParent: function() {
       return this.map(function(){
         var parent = this.offsetParent || document.body

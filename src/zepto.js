@@ -316,6 +316,7 @@ var Zepto = (function() {
     svg ? (klass.baseVal = value) : (node.className = value)
   }
 
+  //将下面这些值改为反序列化的值
   // "true"  => true
   // "false" => false
   // "null"  => null

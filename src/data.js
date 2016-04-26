@@ -26,6 +26,10 @@
   }
 
   // Store value under camelized key on node
+  // 在节点上缓存数据
+  // 1. 判断节点是否有{exp}属性，没有赋值$.uuid（从0子增加）
+  // 2. 从data缓存中获取该节点的数据对象store，没有就从节点的data-*属性读取
+  // 3. 从store读取name属性
   function setData(node, name, value) {
     var id = node[exp] || (node[exp] = ++$.uuid),
       store = data[id] || (data[id] = attributeData(node))
@@ -68,6 +72,7 @@
   }
 
   // Generate extended `remove` and `empty` functions
+  // 执行remove和empty方法时，将其所有子节点上的缓存数据删除
   ;['remove', 'empty'].forEach(function(methodName){
     var origFn = $.fn[methodName]
     $.fn[methodName] = function() {
